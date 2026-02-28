@@ -1,0 +1,9 @@
+{
+  "name": "Proprietress OS",
+  "short_name": "P.OS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#3b82f6",
+  "icons":
+}
