@@ -1,33 +1,47 @@
-import { kv } from '@vercel/kv';
+// --- MESSAGING LOGIC ---
+const chatContainer = document.getElementById('chat-container');
+const messageForm = document.getElementById('messenger-form');
+const messageInput = document.getElementById('m-input');
 
-export default async function handler(req, res) {
-  const { room } = req.query;
-  if (!room) return res.status(400).json({ error: 'Room ID required' });
+async function syncMessages() {
+    try {
+        const res = await fetch(`/api/messages?room=${APP_STATE.room}`);
+        const data = await res.json();
+        
+        chatContainer.innerHTML = data.map(m => `
+            <div class="flex flex-col ${m.user === APP_STATE.user ? 'items-end' : 'items-start'}">
+                <span class="text-[10px] font-bold text-slate-500 uppercase px-2 mb-1">${m.user}</span>
+                <div class="chat-bubble ${m.user === APP_STATE.user ? 'bubble-out' : 'bubble-in'}">
+                    ${m.text}
+                </div>
+            </div>
+        `).join('');
+        
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    } catch (e) { console.error("Link offline"); }
+}
 
-  try {
-    if (req.method === 'GET') {
-      // Get messages for this specific room link
-      const messages = await kv.get(`chat:${room}`) || [];
-      return res.status(200).json(messages);
-    }
+messageForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const text = messageInput.value.trim();
+    if(!text) return;
 
-    if (req.method === 'POST') {
-      const { user, text } = req.body;
-      const messages = await kv.get(`chat:${room}`) || [];
-      const newMessage = { 
-        user, 
-        text, 
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-      };
-      
-      messages.push(newMessage);
-      // Keep only the last 50 messages to save space
-      const limitedMessages = messages.slice(-50); 
-      
-      await kv.set(`chat:${room}`, limitedMessages);
-      return res.status(201).json(newMessage);
-    }
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
-  }
+    messageInput.value = ''; // Instant UI clear
+    await fetch(`/api/messages?room=${APP_STATE.room}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: APP_STATE.user, text })
+    });
+    syncMessages();
+};
+
+// Start Polling
+setInterval(syncMessages, 3000);
+syncMessages();
+
+// --- NAVIGATION ---
+function navTo(tab) {
+    if (APP_STATE.isGuest) return; // Prevent guest from switching tabs
+    document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + tab).classList.add('active');
 }
