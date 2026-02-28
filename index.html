@@ -3,278 +3,212 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>P.OS | Ma Edition</title>
+    <title>P.OS | Cyber-Titan</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
     
     <style>
         :root {
-            --glass: rgba(255, 255, 255, 0.03);
-            --glass-heavy: rgba(255, 255, 255, 0.08);
+            --accent: #00d4ff;
+            --bg: #050505;
+            --glass: rgba(255, 255, 255, 0.05);
             --glass-border: rgba(255, 255, 255, 0.1);
-            --accent: #00e5ff;
-            --accent-glow: rgba(0, 229, 255, 0.3);
-            --bg-dark: #020205;
-            --text-main: #e0e0e0;
+            --card-blur: blur(25px);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body, html {
             margin: 0; padding: 0;
-            font-family: 'Inter', -apple-system, system-ui, sans-serif;
-            background: radial-gradient(circle at 0% 0%, #0d1117 0%, #020205 100%);
-            color: var(--text-main);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #000;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(210,100%,10%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,100%,5%,1) 0, transparent 50%);
+            color: white;
             height: 100vh;
-            overflow: hidden; /* Prevent bounce on mobile */
+            overflow: hidden;
         }
 
-        /* --- THE DYNAMIC HEADER --- */
-        .system-top-bar {
-            padding: 25px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 10;
+        /* --- HOME SCREEN (SPRINGBOARD) --- */
+        .home-screen {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 20px;
+            padding: 40px 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            transition: transform 0.5s ease, opacity 0.5s ease;
         }
 
-        .greeting-box h1 {
-            font-weight: 300;
-            margin: 0;
-            font-size: 1.4rem;
-            letter-spacing: -0.5px;
+        .home-screen.hidden {
+            transform: scale(0.9);
+            opacity: 0;
+            pointer-events: none;
         }
 
-        .greeting-box span {
-            color: var(--accent);
-            font-weight: 700;
-            text-shadow: 0 0 10px var(--accent-glow);
-        }
-
-        /* --- NAVIGATION SYSTEM --- */
-        .sidebar {
-            position: fixed;
-            left: 15px; top: 50%;
-            transform: translateY(-50%);
-            width: 65px;
-            height: fit-content;
-            background: var(--glass-heavy);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
+        .app-icon-wrapper {
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            padding: 15px 0;
-            z-index: 1000;
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            align-items: center;
+            cursor: pointer;
+            transition: 0.3s;
         }
 
-        .nav-item {
-            width: 45px; height: 45px;
-            margin: 5px auto;
-            border-radius: 12px;
+        .app-icon {
+            width: 70px;
+            height: 70px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            transition: 0.3s;
-            color: rgba(255,255,255,0.4);
-            position: relative;
+            font-size: 1.8rem;
+            backdrop-filter: var(--card-blur);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            margin-bottom: 8px;
         }
 
-        .nav-item.active {
-            color: var(--accent);
-            background: rgba(0, 229, 255, 0.1);
-        }
+        .app-icon-wrapper:active .app-icon { transform: scale(0.9); }
+        .app-label { font-size: 0.75rem; font-weight: 500; letter-spacing: 0.5px; opacity: 0.8; }
 
-        .nav-item:hover { color: #fff; transform: scale(1.1); }
-
-        /* --- MULTI-PAGE VIEWPORT --- */
-        .main-stage {
-            margin-left: 90px;
-            height: calc(100vh - 100px);
-            overflow-y: auto;
-            padding-right: 20px;
-            scrollbar-width: none;
-        }
-
-        .page-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 20px;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: 0.5s ease;
-            display: none; /* Controlled by JS */
-        }
-
-        .page-container.active {
-            display: grid;
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* APP CARDS */
-        .app-card {
-            background: var(--glass);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            overflow: hidden;
-            height: 450px;
+        /* --- APP LAYER (THE MULTI-PAGES) --- */
+        .app-layer {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--bg);
+            z-index: 200;
+            transform: translateY(100%);
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             flex-direction: column;
         }
 
-        .card-header {
-            padding: 15px 20px;
-            border-bottom: 1px solid var(--glass-border);
+        .app-layer.active { transform: translateY(0); }
+
+        .app-header {
+            padding: 20px;
             display: flex;
-            justify-content: space-between;
-            font-size: 0.8rem;
-            font-weight: 600;
-            letter-spacing: 1px;
+            align-items: center;
             background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid var(--glass-border);
         }
 
-        iframe { width: 100%; height: 100%; border: none; }
+        .back-btn {
+            font-size: 1.2rem;
+            margin-right: 20px;
+            cursor: pointer;
+            color: var(--accent);
+        }
 
-        /* --- MOBILE ADAPTATION --- */
-        @media (max-width: 768px) {
-            .sidebar {
-                left: 10px; right: 10px; bottom: 15px;
-                top: auto; transform: none;
-                width: calc(100% - 20px);
-                height: 65px;
-                flex-direction: row;
-                justify-content: space-around;
-                padding: 0;
-                border-radius: 30px;
-            }
+        iframe {
+            flex-grow: 1;
+            width: 100%;
+            border: none;
+            background: transparent;
+        }
 
-            .main-stage {
-                margin-left: 0;
-                padding: 10px;
-                height: calc(100vh - 160px);
-            }
+        /* --- SYSTEM BAR --- */
+        .system-bar {
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-            .page-container {
-                grid-template-columns: 1fr;
-            }
-            
-            .system-top-bar { padding: 15px 20px; }
+        .status-time { font-weight: 600; font-size: 0.9rem; }
+        .greeting { font-size: 1.2rem; font-weight: 300; }
+        .greeting span { color: var(--accent); font-weight: 700; }
+
+        /* Mobile specific icon sizing */
+        @media (max-width: 480px) {
+            .home-screen { grid-template-columns: repeat(3, 1fr); gap: 15px; }
+            .app-icon { width: 60px; height: 60px; font-size: 1.5rem; }
         }
     </style>
 </head>
 <body>
 
-    <header class="system-top-bar">
-        <div class="greeting-box" data-aos="fade-right">
-            <h1 id="ma-greeting">Hello, <span>Ma</span></h1>
-        </div>
-        <div class="status-icons">
-            <i class="fa-solid fa-wifi" style="margin-right: 10px;"></i>
-            <span id="digital-clock">00:00</span>
-        </div>
-    </header>
+    <div class="system-bar" data-aos="fade-down">
+        <div class="greeting" id="dynamic-greet">System <span>Online</span></div>
+        <div class="status-time" id="clock">00:00</div>
+    </div>
 
-    <nav class="sidebar" data-aos="fade-up">
-        <div class="nav-item active" onclick="switchPage('home', this)" title="Home">
-            <i class="fa-solid fa-house-chimney-window"></i>
-        </div>
-        <div class="nav-item" onclick="switchPage('comms', this)" title="Communications">
-            <i class="fa-solid fa-satellite-dish"></i>
-        </div>
-        <div class="nav-item" onclick="switchPage('intel', this)" title="System Intel">
-            <i class="fa-solid fa-microchip"></i>
-        </div>
-        <div class="nav-item" style="margin-top: auto;" onclick="switchPage('settings', this)">
-            <i class="fa-solid fa-sliders"></i>
-        </div>
-    </nav>
-
-    <main class="main-stage">
-        
-        <div id="home" class="page-container active">
-            <section class="app-card" data-aos="zoom-in">
-                <div class="card-header"><span>WEATHER SENSORS</span><i class="fa-solid fa-ellipsis"></i></div>
-                <iframe src="weather.html"></iframe>
-            </section>
-            <section class="app-card" data-aos="zoom-in" data-aos-delay="100">
-                <div class="card-header"><span>QUICK ACTIONS</span><i class="fa-solid fa-bolt"></i></div>
-                <div style="padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                   <button style="background: var(--glass-heavy); border: 1px solid var(--accent); color: white; padding: 20px; border-radius: 15px;">Lights</button>
-                   <button style="background: var(--glass-heavy); border: 1px solid var(--glass-border); color: white; padding: 20px; border-radius: 15px;">Security</button>
-                </div>
-            </section>
+    <main class="home-screen" id="home">
+        <div class="app-icon-wrapper" onclick="openApp('weather', 'Weather Intel', 'weather.html')" data-aos="zoom-in" data-aos-delay="100">
+            <div class="app-icon" style="color: #ffce67;"><i class="fa-solid fa-cloud-sun-bolt"></i></div>
+            <div class="app-label">Weather</div>
         </div>
 
-        <div id="comms" class="page-container">
-            <section class="app-card" style="grid-column: 1 / -1;">
-                <div class="card-header"><span>SECURE MESSAGING</span><i class="fa-solid fa-shield-halved"></i></div>
-                <iframe src="chat.html"></iframe>
-            </section>
+        <div class="app-icon-wrapper" onclick="openApp('chat', 'Secure Comms', 'chat.html')" data-aos="zoom-in" data-aos-delay="200">
+            <div class="app-icon" style="color: #00ff88;"><i class="fa-solid fa-comment-dots"></i></div>
+            <div class="app-label">Comms</div>
         </div>
 
-        <div id="intel" class="page-container">
-            <section class="app-card">
-                <div class="card-header"><span>CPU USAGE</span></div>
-                <div style="padding: 40px; text-align: center;">
-                    <i class="fa-solid fa-gauge-high" style="font-size: 4rem; color: var(--accent);"></i>
-                    <h3>System Optimized</h3>
-                </div>
-            </section>
+        <div class="app-icon-wrapper" onclick="openApp('nodes', 'Grid Nodes', 'nodes.html')" data-aos="zoom-in" data-aos-delay="300">
+            <div class="app-icon" style="color: var(--accent);"><i class="fa-solid fa-network-wired"></i></div>
+            <div class="app-label">Nodes</div>
         </div>
 
+        <div class="app-icon-wrapper" onclick="openApp('vault', 'The Vault', 'vault.html')" data-aos="zoom-in" data-aos-delay="400">
+            <div class="app-icon" style="color: #ff3e3e;"><i class="fa-solid fa-shield-lock"></i></div>
+            <div class="app-label">Vault</div>
+        </div>
     </main>
+
+    <div id="app-viewport" class="app-layer">
+        <div class="app-header">
+            <i class="fa-solid fa-chevron-left back-btn" onclick="closeApp()"></i>
+            <span id="app-title" style="text-transform: uppercase; letter-spacing: 2px; font-size: 0.8rem;">App Name</span>
+        </div>
+        <iframe src="" id="app-frame"></iframe>
+    </div>
 
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
-        // Init Animations
-        AOS.init({ duration: 800, easing: 'ease-in-out' });
+        AOS.init({ duration: 600 });
 
-        // Multi-Page Switching Logic
-        function switchPage(pageId, el) {
-            // Update Nav Icons
-            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-            el.classList.add('active');
+        // Multi-Page Logic
+        const home = document.getElementById('home');
+        const viewport = document.getElementById('app-viewport');
+        const frame = document.getElementById('app-frame');
+        const title = document.getElementById('app-title');
 
-            // Update Pages
-            document.querySelectorAll('.page-container').forEach(page => {
-                page.classList.remove('active');
-            });
-            const activePage = document.getElementById(pageId);
-            activePage.classList.add('active');
-            
-            // Re-trigger AOS for new page
-            AOS.refresh();
+        function openApp(id, name, url) {
+            title.innerText = name;
+            frame.src = url; // Directly loads the other page
+            home.classList.add('hidden');
+            viewport.classList.add('active');
         }
 
-        // Ma's Personalized Time Greeting
-        function updateMaGreeting() {
-            const hour = new Date().getHours();
-            const greetNode = document.querySelector('#ma-greeting span');
-            const welcomeText = document.querySelector('#ma-greeting');
-            
-            let timeGreet = "Good Morning";
-            if(hour >= 12 && hour < 17) timeGreet = "Good Afternoon";
-            if(hour >= 17 && hour < 21) timeGreet = "Good Evening";
-            if(hour >= 21 || hour < 5) timeGreet = "Good Night";
-            
-            welcomeText.innerHTML = `${timeGreet}, <span>Ma</span>`;
+        function closeApp() {
+            viewport.classList.remove('active');
+            home.classList.remove('hidden');
+            setTimeout(() => { frame.src = ""; }, 500); // Clear frame after animation
         }
 
-        // Clock Update
+        // Dynamic Greeting
+        function updateStatus() {
+            const hr = new Date().getHours();
+            const greet = document.getElementById('dynamic-greet');
+            let timeContext = "Morning";
+            if(hr >= 12 && hr < 17) timeContext = "Afternoon";
+            if(hr >= 17 && hr < 21) timeContext = "Evening";
+            if(hr >= 21 || hr < 5) timeContext = "Night";
+            
+            greet.innerHTML = `${timeContext} <span>Titan</span>`;
+        }
+
+        // Clock
         setInterval(() => {
             const now = new Date();
-            document.getElementById('digital-clock').innerText = 
-                now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         }, 1000);
 
-        updateMaGreeting();
+        updateStatus();
     </script>
 </body>
 </html>
