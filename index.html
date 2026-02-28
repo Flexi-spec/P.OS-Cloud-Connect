@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P.OS | Titan Edition</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent: #00d4ff;
+            --bg: #050505;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system;
+            background: radial-gradient(circle at top right, #1a1a2e, #050505);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* High-End Glassmorphism Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0; top: 0; bottom: 0;
+            width: 70px;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            z-index: 100;
+        }
+
+        .nav-item {
+            width: 45px; height: 45px;
+            margin: 15px 0;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.3s;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .nav-item.active, .nav-item:hover {
+            background: var(--accent);
+            color: #000;
+            box-shadow: 0 0 15px var(--accent);
+        }
+
+        /* Main Viewport */
+        .viewport {
+            margin-left: 70px;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr;
+            gap: 15px;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .app-window {
+            background: var(--glass);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(15px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .window-header {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.03);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        iframe {
+            width: 100%; height: 100%;
+            border: none;
+            background: transparent;
+        }
+
+        /* Notification Badge */
+        .badge {
+            position: absolute;
+            top: -5px; right: -5px;
+            background: #ff3e3e;
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #000;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="nav-item active" onclick="showApp('home')">
+            <i class="fa-solid fa-house"></i>
+        </div>
+        <div class="nav-item" onclick="requestNotify()">
+            <i class="fa-solid fa-bell"></i>
+        </div>
+        <div class="nav-item" style="margin-top: auto;">
+            <i class="fa-solid fa-gear"></i>
+        </div>
+    </nav>
+
+    <main class="viewport">
+        <section class="app-window" id="weather-node">
+            <div class="window-header">
+                <span><i class="fa-solid fa-cloud-sun"></i> Weather Intelligence</span>
+                <i class="fa-solid fa-expand"></i>
+            </div>
+            <iframe src="weather.html"></iframe>
+        </section>
+
+        <section class="app-window" id="chat-node">
+            <div class="window-header">
+                <span><i class="fa-solid fa-message"></i> Secure Comms</span>
+                <i class="fa-solid fa-ellipsis-v"></i>
+            </div>
+            <iframe src="chat.html"></iframe>
+        </section>
+    </main>
+
+    <script>
+        // 1. Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log("P.OS System Online"));
+        }
+
+        // 2. Notification System
+        function requestNotify() {
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    new Notification("P.OS | SECURE", {
+                        body: "External notifications are now synced with your PWA.",
+                        icon: "favicon.png"
+                    });
+                }
+            });
+        }
+
+        // 3. Listen for Messages from Child Frames (Chat App)
+        window.addEventListener('message', (event) => {
+            // If chat.html sends a message, trigger a system notification
+            if (event.data.type === 'NEW_MESSAGE') {
+                triggerNativeNotification(event.data.user, event.data.text);
+            }
+        });
+
+        function triggerNativeNotification(user, msg) {
+            if (Notification.permission === "granted") {
+                new Notification(`Message from ${user}`, {
+                    body: msg,
+                    vibrate: [200, 100, 200]
+                });
+            }
+        }
+    </script>
+</body>
+</html>
