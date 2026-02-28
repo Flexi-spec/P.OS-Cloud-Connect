@@ -3,141 +3,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Azin Messenger | Secure Link Chat</title>
-    
-    <!-- PWA Setup -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="manifest" href="/manifest.json">
-
+    <title>P.OS | Secure Command</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com">
-    <link href="https://fonts.googleapis.com" rel="stylesheet">
-
     <style>
-        :root { --bg: #0b141a; --header: #111b21; --chat-bg: #0b141a; --bubble-out: #005c4b; --bubble-in: #202c33; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: #e9edef; margin: 0; overflow: hidden; height: 100vh; }
+        :root { --blue-glow: #3b82f6; --glass: rgba(15, 23, 42, 0.6); }
+        body { 
+            background: radial-gradient(circle at top right, #1e293b, #020617);
+            color: #f8fafc; font-family: sans-serif; height: 100vh; overflow: hidden;
+        }
+        .glass-card { 
+            background: var(--glass); backdrop-filter: blur(25px); 
+            border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 30px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+        }
+        .neon-text { text-shadow: 0 0 10px var(--blue-glow); }
+        .bubble { max-width: 80%; padding: 12px 16px; border-radius: 20px; font-size: 0.9rem; margin-bottom: 8px; }
+        .mine { background: linear-gradient(135deg, #2563eb, #1d4ed8); align-self: flex-end; border-bottom-right-radius: 4px; }
+        .theirs { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); align-self: flex-start; border-bottom-left-radius: 4px; }
         
-        /* Chat Layout */
-        #chat-window { height: calc(100vh - 130px); overflow-y: auto; scroll-behavior: smooth; background-image: url('https://user-images.githubusercontent.com'); background-blend-mode: overlay; background-color: var(--chat-bg); }
-        
-        /* Bubbles */
-        .bubble { max-width: 75%; padding: 8px 12px; border-radius: 8px; font-size: 0.95rem; line-height: 1.4; position: relative; box-shadow: 0 1px 0.5px rgba(0,0,0,0.13); animation: fadeIn 0.2s ease; }
-        .bubble.mine { background: var(--bubble-out); align-self: flex-end; border-top-right-radius: 0; }
-        .bubble.theirs { background: var(--bubble-in); align-self: flex-start; border-top-left-radius: 0; }
-        
-        .time { font-size: 0.65rem; color: rgba(255,255,255,0.5); float: right; margin-top: 4px; margin-left: 8px; }
-        .sender-name { font-size: 0.75rem; font-weight: 700; color: #34b7f1; display: block; margin-bottom: 2px; }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Input Area */
-        #input-area { background: #202c33; padding: 10px 16px; display: flex; align-items: center; gap: 12px; position: fixed; bottom: 0; width: 100%; }
-        input { flex: 1; background: #2a3942; border: none; color: white; padding: 10px 15px; border-radius: 8px; outline: none; }
-        
-        /* Custom Scrollbar */
-        #chat-window::-webkit-scrollbar { width: 6px; }
-        #chat-window::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+        /* Restricted Access Overlay */
+        body.guest-view .admin-only { display: none !important; }
     </style>
 </head>
-<body class="flex flex-col">
+<body class="flex flex-col md:flex-row p-4 md:p-8 gap-6">
 
-    <!-- TOP NAV -->
-    <header class="h-16 bg-[#111b21] flex items-center justify-between px-4 border-b border-white/5 z-10">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-slate-600 rounded-full flex items-center justify-center font-bold text-white overflow-hidden">
-                <img id="room-avatar" src="https://ui-avatars.com" alt="">
-            </div>
-            <div>
-                <h1 id="room-title" class="text-sm font-bold">Secure Chat</h1>
-                <p class="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">Online • Encrypted</p>
+    <!-- LEFT: CONTACT CONTROL (ADMIN ONLY) -->
+    <aside class="admin-only w-full md:w-80 space-y-6">
+        <div class="glass-card p-6">
+            <h1 class="text-2xl font-black text-blue-500 neon-text mb-4">COMMAND</h1>
+            <div class="space-y-4">
+                <p class="text-[10px] uppercase font-bold text-slate-500">Create Secure Link</p>
+                <input id="contactName" type="text" placeholder="Enter Contact Name..." class="w-full bg-slate-900/50 border border-blue-500/30 rounded-xl p-3 text-sm outline-none focus:ring-1 ring-blue-500">
+                <button onclick="generateSecureLink()" class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl font-bold text-sm transition shadow-lg shadow-blue-500/20">GENERATE LINK</button>
             </div>
         </div>
-        <div class="flex gap-4 text-slate-400">
-            <button onclick="shareLink()"><i class="fas fa-user-plus"></i></button>
-            <button onclick="location.reload()"><i class="fas fa-sync-alt"></i></button>
+        <div class="glass-card p-6 flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-widest">System Status</span>
+            <div id="online-pulse" class="h-2 w-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]"></div>
         </div>
-    </header>
+    </aside>
 
-    <!-- MESSAGES AREA -->
-    <div id="chat-window" class="flex flex-col p-4 gap-3">
-        <!-- Messages will load here -->
-    </div>
+    <!-- RIGHT: CHAT CORE -->
+    <main class="flex-1 glass-card flex flex-col overflow-hidden relative">
+        <header class="p-6 border-b border-white/5 flex items-center justify-between bg-white/5">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-bold">MO</div>
+                <div>
+                    <h2 id="chatHeading" class="font-bold text-white uppercase tracking-tighter">SECURE CHANNEL</h2>
+                    <p id="statusLabel" class="text-[10px] text-emerald-500 font-bold uppercase">Ready for Sync</p>
+                </div>
+            </div>
+            <i class="fas fa-ellipsis-vertical text-slate-500"></i>
+        </header>
 
-    <!-- INPUT AREA -->
-    <form id="chat-form">
-        <div id="input-area">
-            <button type="button" class="text-slate-400 text-xl"><i class="far fa-face-smile"></i></button>
-            <input type="text" id="msg-input" placeholder="Type a message" autocomplete="off">
-            <button type="submit" id="send-btn" class="text-emerald-500 text-xl px-2">
+        <div id="msgBox" class="flex-1 overflow-y-auto p-6 flex flex-col gap-2">
+            <!-- Messages Load Here -->
+        </div>
+
+        <form id="chatForm" class="p-4 bg-slate-950/50 border-t border-white/5 flex gap-3">
+            <input id="chatInput" type="text" placeholder="Transmit secure data..." autocomplete="off" class="flex-1 bg-transparent border-none p-2 text-white outline-none">
+            <button type="submit" class="bg-blue-600 w-12 h-12 rounded-2xl shadow-lg shadow-blue-600/30 transition hover:scale-105 active:scale-95">
                 <i class="fas fa-paper-plane"></i>
             </button>
-        </div>
-    </form>
+        </form>
+    </main>
 
     <script>
-        const PARAMS = new URLSearchParams(window.location.search);
-        const CONFIG = {
-            room: PARAMS.get('room') || 'Global-Lounge',
-            user: localStorage.getItem('username') || ('User' + Math.floor(Math.random() * 999)),
-            endpoint: '/api/messages'
-        };
+        const params = new URLSearchParams(window.location.search);
+        const ROOM = params.get('id') || 'Global';
+        const GUEST_NAME = params.get('name'); // The name she saved the person as
+        const IS_ADMIN = !GUEST_NAME;
+        const MY_NAME = IS_ADMIN ? "Professor" : GUEST_NAME;
 
-        // Initialize User
-        if (!localStorage.getItem('username')) {
-            localStorage.setItem('username', CONFIG.user);
+        if (!IS_ADMIN) {
+            document.body.classList.add('guest-view');
+            document.getElementById('chatHeading').innerText = `WELCOME, ${GUEST_NAME}`;
+            document.getElementById('statusLabel').innerText = "LINK ESTABLISHED BY PROFESSOR";
         }
 
-        document.getElementById('room-title').innerText = CONFIG.room;
-        document.getElementById('room-avatar').src = `https://ui-avatars.com{CONFIG.room}&background=005c4b&color=fff`;
+        // 1. GENERATE LINK FOR DAVID
+        function generateSecureLink() {
+            const name = document.getElementById('contactName').value;
+            if(!name) return alert("Enter a name!");
+            const uniqueID = "SEC-" + Math.random().toString(36).substr(2, 5);
+            const secureURL = `${window.location.origin}${window.location.pathname}?id=${uniqueID}&name=${name}`;
+            
+            navigator.clipboard.writeText(secureURL);
+            alert(`Link generated for ${name}! Copied to clipboard.`);
+        }
 
-        // 1. Fetch & Render Messages
-        async function syncChat() {
+        // 2. REAL-TIME JSON SYNC
+        async function sync() {
             try {
-                const res = await fetch(`${CONFIG.endpoint}?room=${CONFIG.room}`);
-                const messages = await res.json();
-                const container = document.getElementById('chat-window');
+                const res = await fetch(`/api/messages?room=${ROOM}`);
+                const data = await res.json();
+                const box = document.getElementById('msgBox');
                 
-                const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+                // Track for notifications
+                if (IS_ADMIN && data.length > localStorage.getItem('lastCount')) {
+                    const last = data[data.length-1];
+                    if(last.user !== MY_NAME) pushNotif(last.user, last.text);
+                }
+                localStorage.setItem('lastCount', data.length);
 
-                container.innerHTML = messages.map(m => `
-                    <div class="bubble ${m.user === CONFIG.user ? 'mine' : 'theirs'}">
-                        ${m.user !== CONFIG.user ? `<span class="sender-name">${m.user}</span>` : ''}
-                        ${m.text}
-                        <span class="time">${m.time}</span>
+                box.innerHTML = data.map(m => `
+                    <div class="flex flex-col ${m.user === MY_NAME ? 'items-end' : 'items-start'}">
+                        <span class="text-[9px] font-black text-slate-500 uppercase px-2 mb-1">${m.user}</span>
+                        <div class="bubble ${m.user === MY_NAME ? 'mine' : 'theirs'}">${m.text}</div>
                     </div>
                 `).join('');
-
-                if (isAtBottom) container.scrollTop = container.scrollHeight;
-            } catch (err) { console.error("Sync lost..."); }
+                box.scrollTop = box.scrollHeight;
+            } catch(e) {}
         }
 
-        // 2. Send Message
-        document.getElementById('chat-form').onsubmit = async (e) => {
+        // 3. SEND MESSAGE
+        document.getElementById('chatForm').onsubmit = async (e) => {
             e.preventDefault();
-            const input = document.getElementById('msg-input');
-            const text = input.value.trim();
-            if (!text) return;
+            const input = document.getElementById('chatInput');
+            const text = input.value;
+            if(!text) return;
+            input.value = '';
 
-            input.value = ''; // Instant clear
-            
-            await fetch(`${CONFIG.endpoint}?room=${CONFIG.room}`, {
+            await fetch(`/api/messages?room=${ROOM}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user: CONFIG.user, text })
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ user: MY_NAME, text })
             });
-            syncChat();
+            sync();
         };
 
-        // 3. Share Link
-        function shareLink() {
-            const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${CONFIG.room}`;
-            navigator.clipboard.writeText(inviteUrl);
-            alert("Chat Link Copied! Send it to anyone to start chatting in this room.");
+        function pushNotif(user, text) {
+            if (Notification.permission === "granted") {
+                new Notification(`Message from ${user}`, { body: text });
+            }
         }
 
-        // Start polling
-        setInterval(syncChat, 2500);
-        syncChat();
+        Notification.requestPermission();
+        setInterval(sync, 2500);
+        sync();
     </script>
 </body>
 </html>
