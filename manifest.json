@@ -1,9 +1,24 @@
 {
-  "name": "Proprietress OS",
   "short_name": "P.OS",
-  "start_url": "/",
-  "display": "standalone",
+  "name": "P.OS | Cloud Command",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/5968/5968313.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/5968/5968313.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
   "background_color": "#020617",
-  "theme_color": "#3b82f6",
-  "icons":
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#2563eb",
+  "description": "Secure Cloud Command and Multi-Channel Communication Suite.",
+  "orientation": "portrait"
 }
