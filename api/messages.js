@@ -1,47 +1,55 @@
-// --- MESSAGING LOGIC ---
-const chatContainer = document.getElementById('chat-container');
-const messageForm = document.getElementById('messenger-form');
-const messageInput = document.getElementById('m-input');
+import { kv } from '@vercel/kv';
 
-async function syncMessages() {
-    try {
-        const res = await fetch(`/api/messages?room=${APP_STATE.room}`);
-        const data = await res.json();
-        
-        chatContainer.innerHTML = data.map(m => `
-            <div class="flex flex-col ${m.user === APP_STATE.user ? 'items-end' : 'items-start'}">
-                <span class="text-[10px] font-bold text-slate-500 uppercase px-2 mb-1">${m.user}</span>
-                <div class="chat-bubble ${m.user === APP_STATE.user ? 'bubble-out' : 'bubble-in'}">
-                    ${m.text}
-                </div>
-            </div>
-        `).join('');
-        
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    } catch (e) { console.error("Link offline"); }
-}
+export default async function handler(req, res) {
+  // Get the room ID from the URL (?room=xyz)
+  const { room } = req.query;
 
-messageForm.onsubmit = async (e) => {
-    e.preventDefault();
-    const text = messageInput.value.trim();
-    if(!text) return;
+  if (!room) {
+    return res.status(400).json({ error: 'Executive Room ID is required.' });
+  }
 
-    messageInput.value = ''; // Instant UI clear
-    await fetch(`/api/messages?room=${APP_STATE.room}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user: APP_STATE.user, text })
-    });
-    syncMessages();
-};
+  const roomKey = `chat_room:${room}`;
 
-// Start Polling
-setInterval(syncMessages, 3000);
-syncMessages();
+  try {
+    // --- METHOD: GET (Fetching messages) ---
+    if (req.method === 'GET') {
+      const messages = await kv.get(roomKey) || [];
+      return res.status(200).json(messages);
+    }
 
-// --- NAVIGATION ---
-function navTo(tab) {
-    if (APP_STATE.isGuest) return; // Prevent guest from switching tabs
-    document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
-    document.getElementById('view-' + tab).classList.add('active');
+    // --- METHOD: POST (Sending a new message) ---
+    if (req.method === 'POST') {
+      const { user, text } = req.body;
+
+      if (!user || !text) {
+        return res.status(400).json({ error: 'User and Text fields are mandatory.' });
+      }
+
+      // Fetch existing history from JSON storage
+      const history = await kv.get(roomKey) || [];
+
+      // Create the new message object
+      const newMessage = {
+        user,
+        text,
+        time: new Date().toLocaleTimeString('en-GB', { hour12: false })
+      };
+
+      // Add to history and keep only the last 100 messages (to save space)
+      history.push(newMessage);
+      const updatedHistory = history.slice(-100);
+
+      // Save back to Vercel KV
+      await kv.set(roomKey, updatedHistory);
+
+      return res.status(201).json(newMessage);
+    }
+
+    // Handle unsupported methods
+    return res.status(405).json({ error: 'Method not allowed' });
+
+  } catch (error) {
+    console.error("Vercel KV Error:", error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
 }
