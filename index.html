@@ -7,141 +7,152 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com">
     <style>
-        :root { --blue-glow: #3b82f6; --glass: rgba(15, 23, 42, 0.6); }
-        body { 
-            background: radial-gradient(circle at top right, #1e293b, #020617);
-            color: #f8fafc; font-family: sans-serif; height: 100vh; overflow: hidden;
-        }
-        .glass-card { 
-            background: var(--glass); backdrop-filter: blur(25px); 
-            border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 30px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
-        }
-        .neon-text { text-shadow: 0 0 10px var(--blue-glow); }
-        .bubble { max-width: 80%; padding: 12px 16px; border-radius: 20px; font-size: 0.9rem; margin-bottom: 8px; }
-        .mine { background: linear-gradient(135deg, #2563eb, #1d4ed8); align-self: flex-end; border-bottom-right-radius: 4px; }
-        .theirs { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); align-self: flex-start; border-bottom-left-radius: 4px; }
+        :root { --bg: #020617; --glass: rgba(15, 23, 42, 0.8); --accent: #3b82f6; }
+        body { font-family: sans-serif; background: var(--bg); color: white; overflow: hidden; height: 100vh; }
+        .glass { background: var(--glass); backdrop-filter: blur(25px); border: 1px solid rgba(255,255,255,0.1); }
+        .bubble { max-width: 80%; padding: 12px; border-radius: 18px; font-size: 0.9rem; margin-bottom: 8px; }
+        .mine { background: var(--accent); align-self: flex-end; border-bottom-right-radius: 2px; }
+        .theirs { background: #1e293b; align-self: flex-start; border-bottom-left-radius: 2px; }
         
-        /* Restricted Access Overlay */
-        body.guest-view .admin-only { display: none !important; }
+        /* Sidebar for Professor Only */
+        #contact-sidebar { width: 300px; border-right: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; }
+        body.guest-mode #contact-sidebar { display: none !important; }
     </style>
 </head>
-<body class="flex flex-col md:flex-row p-4 md:p-8 gap-6">
+<body class="flex">
 
-    <!-- LEFT: CONTACT CONTROL (ADMIN ONLY) -->
-    <aside class="admin-only w-full md:w-80 space-y-6">
-        <div class="glass-card p-6">
-            <h1 class="text-2xl font-black text-blue-500 neon-text mb-4">COMMAND</h1>
-            <div class="space-y-4">
-                <p class="text-[10px] uppercase font-bold text-slate-500">Create Secure Link</p>
-                <input id="contactName" type="text" placeholder="Enter Contact Name..." class="w-full bg-slate-900/50 border border-blue-500/30 rounded-xl p-3 text-sm outline-none focus:ring-1 ring-blue-500">
-                <button onclick="generateSecureLink()" class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl font-bold text-sm transition shadow-lg shadow-blue-500/20">GENERATE LINK</button>
-            </div>
+    <!-- PROFESSOR'S CONTACT LIST -->
+    <aside id="contact-sidebar" class="bg-slate-950 p-6">
+        <h2 class="text-xl font-black text-blue-500 mb-6">COMMAND</h2>
+        <div class="mb-6">
+            <input type="text" id="new-contact-name" placeholder="New Contact Name..." class="w-full bg-slate-900 p-3 rounded-xl mb-2 text-sm outline-none">
+            <button onclick="createNewContact()" class="w-full bg-blue-600 p-3 rounded-xl font-bold text-xs">CREATE SECURE LINK</button>
         </div>
-        <div class="glass-card p-6 flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-widest">System Status</span>
-            <div id="online-pulse" class="h-2 w-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]"></div>
+        <div id="contact-list" class="space-y-2 overflow-y-auto flex-1">
+            <!-- Saved contacts will appear here -->
         </div>
     </aside>
 
-    <!-- RIGHT: CHAT CORE -->
-    <main class="flex-1 glass-card flex flex-col overflow-hidden relative">
-        <header class="p-6 border-b border-white/5 flex items-center justify-between bg-white/5">
+    <!-- CHAT INTERFACE -->
+    <main class="flex-1 flex flex-col relative">
+        <header class="h-20 glass flex items-center justify-between px-8 border-b border-white/5">
             <div class="flex items-center gap-4">
-                <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-bold">MO</div>
+                <div id="status-dot" class="w-3 h-3 bg-slate-500 rounded-full animate-pulse"></div>
                 <div>
-                    <h2 id="chatHeading" class="font-bold text-white uppercase tracking-tighter">SECURE CHANNEL</h2>
-                    <p id="statusLabel" class="text-[10px] text-emerald-500 font-bold uppercase">Ready for Sync</p>
+                    <h1 id="chat-with-name" class="font-bold text-lg">Select a Contact</h1>
+                    <p id="online-status" class="text-[10px] text-slate-500 uppercase font-black">System Standby</p>
                 </div>
             </div>
-            <i class="fas fa-ellipsis-vertical text-slate-500"></i>
         </header>
 
-        <div id="msgBox" class="flex-1 overflow-y-auto p-6 flex flex-col gap-2">
-            <!-- Messages Load Here -->
+        <div id="chat-box" class="flex-1 overflow-y-auto p-6 flex flex-col space-y-2 bg-[url('https://www.transparenttextures.com')]">
+            <!-- Messages load here -->
         </div>
 
-        <form id="chatForm" class="p-4 bg-slate-950/50 border-t border-white/5 flex gap-3">
-            <input id="chatInput" type="text" placeholder="Transmit secure data..." autocomplete="off" class="flex-1 bg-transparent border-none p-2 text-white outline-none">
-            <button type="submit" class="bg-blue-600 w-12 h-12 rounded-2xl shadow-lg shadow-blue-600/30 transition hover:scale-105 active:scale-95">
+        <form id="chat-form" class="p-6 bg-slate-950/50 flex gap-4">
+            <input type="text" id="msg-input" placeholder="Type encrypted message..." class="flex-1 bg-slate-900 border border-white/10 rounded-2xl px-6 py-4 outline-none">
+            <button type="submit" class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/30">
                 <i class="fas fa-paper-plane"></i>
             </button>
         </form>
     </main>
 
     <script>
+        const PROF_NAME = "Professor";
         const params = new URLSearchParams(window.location.search);
-        const ROOM = params.get('id') || 'Global';
-        const GUEST_NAME = params.get('name'); // The name she saved the person as
-        const IS_ADMIN = !GUEST_NAME;
-        const MY_NAME = IS_ADMIN ? "Professor" : GUEST_NAME;
+        
+        // This is the logic that separates David from Samuel
+        // We use a "Room ID" which is a unique token generated for that person
+        const activeRoom = params.get('room'); 
+        const guestName = params.get('target'); // e.g. "David"
 
-        if (!IS_ADMIN) {
-            document.body.classList.add('guest-view');
-            document.getElementById('chatHeading').innerText = `WELCOME, ${GUEST_NAME}`;
-            document.getElementById('statusLabel').innerText = "LINK ESTABLISHED BY PROFESSOR";
-        }
-
-        // 1. GENERATE LINK FOR DAVID
-        function generateSecureLink() {
-            const name = document.getElementById('contactName').value;
-            if(!name) return alert("Enter a name!");
-            const uniqueID = "SEC-" + Math.random().toString(36).substr(2, 5);
-            const secureURL = `${window.location.origin}${window.location.pathname}?id=${uniqueID}&name=${name}`;
-            
-            navigator.clipboard.writeText(secureURL);
-            alert(`Link generated for ${name}! Copied to clipboard.`);
-        }
-
-        // 2. REAL-TIME JSON SYNC
-        async function sync() {
-            try {
-                const res = await fetch(`/api/messages?room=${ROOM}`);
-                const data = await res.json();
-                const box = document.getElementById('msgBox');
-                
-                // Track for notifications
-                if (IS_ADMIN && data.length > localStorage.getItem('lastCount')) {
-                    const last = data[data.length-1];
-                    if(last.user !== MY_NAME) pushNotif(last.user, last.text);
-                }
-                localStorage.setItem('lastCount', data.length);
-
-                box.innerHTML = data.map(m => `
-                    <div class="flex flex-col ${m.user === MY_NAME ? 'items-end' : 'items-start'}">
-                        <span class="text-[9px] font-black text-slate-500 uppercase px-2 mb-1">${m.user}</span>
-                        <div class="bubble ${m.user === MY_NAME ? 'mine' : 'theirs'}">${m.text}</div>
-                    </div>
-                `).join('');
-                box.scrollTop = box.scrollHeight;
-            } catch(e) {}
-        }
-
-        // 3. SEND MESSAGE
-        document.getElementById('chatForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const input = document.getElementById('chatInput');
-            const text = input.value;
-            if(!text) return;
-            input.value = '';
-
-            await fetch(`/api/messages?room=${ROOM}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ user: MY_NAME, text })
-            });
-            sync();
+        const STATE = {
+            currentUser: activeRoom ? guestName : PROF_NAME,
+            isGuest: !!activeRoom,
+            currentRoom: activeRoom || null
         };
 
-        function pushNotif(user, text) {
-            if (Notification.permission === "granted") {
-                new Notification(`Message from ${user}`, { body: text });
-            }
+        if (STATE.isGuest) {
+            document.body.classList.add('guest-mode');
+            document.getElementById('chat-with-name').innerText = `Welcome, ${guestName}`;
+            document.getElementById('online-status').innerText = "Connected to Professor";
+            document.getElementById('online-status').classList.add('text-emerald-500');
+            document.getElementById('status-dot').classList.replace('bg-slate-500', 'bg-emerald-500');
         }
 
-        Notification.requestPermission();
-        setInterval(sync, 2500);
-        sync();
+        // --- PROFESSOR: CREATE CONTACT ---
+        function createNewContact() {
+            const name = document.getElementById('new-contact-name').value.trim();
+            if (!name) return;
+
+            // Generate a truly unique room ID so Samuel and David never mix
+            const uniqueRoom = `Room_${name}_${Math.floor(Math.random() * 8999 + 1000)}`;
+            const secureLink = `${window.location.origin}${window.location.pathname}?room=${uniqueRoom}&target=${name}`;
+            
+            // Save to LocalStorage so Professor doesn't lose the list
+            const contacts = JSON.parse(localStorage.getItem('myContacts') || '[]');
+            contacts.push({ name, room: uniqueRoom, link: secureLink });
+            localStorage.setItem('myContacts', JSON.stringify(contacts));
+            
+            document.getElementById('new-contact-name').value = '';
+            loadContacts();
+            alert(`Link created for ${name}! Copy it from your list.`);
+        }
+
+        function loadContacts() {
+            const contacts = JSON.parse(localStorage.getItem('myContacts') || '[]');
+            document.getElementById('contact-list').innerHTML = contacts.map(c => `
+                <div class="p-4 glass rounded-2xl cursor-pointer hover:bg-blue-600/20 transition mb-2" onclick="openRoom('${c.room}', '${c.name}')">
+                    <p class="font-bold text-sm">${c.name}</p>
+                    <button onclick="navigator.clipboard.writeText('${c.link}'); event.stopPropagation(); alert('Link Copied')" class="text-[9px] text-blue-400 font-bold uppercase mt-1">Copy Invite Link</button>
+                </div>
+            `).join('');
+        }
+
+        function openRoom(roomID, name) {
+            STATE.currentRoom = roomID;
+            document.getElementById('chat-with-name').innerText = `Chat with ${name}`;
+            document.getElementById('online-status').innerText = "Secure Channel Active";
+            syncMessages();
+        }
+
+        // --- MESSAGING CORE ---
+        async function syncMessages() {
+            if (!STATE.currentRoom) return;
+            try {
+                const res = await fetch(`/api/messages?room=${STATE.currentRoom}`);
+                const data = await res.json();
+                const chatBox = document.getElementById('chat-box');
+                
+                chatBox.innerHTML = data.map(m => `
+                    <div class="flex flex-col ${m.user === STATE.currentUser ? 'items-end' : 'items-start'}">
+                        <div class="bubble ${m.user === STATE.currentUser ? 'mine' : 'theirs'}">
+                            ${m.text}
+                        </div>
+                        <span class="text-[8px] opacity-30 px-2">${m.user} • ${m.time}</span>
+                    </div>
+                `).join('');
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } catch (e) {}
+        }
+
+        document.getElementById('chat-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('msg-input');
+            const text = input.value.trim();
+            if (!text || !STATE.currentRoom) return;
+
+            input.value = '';
+            await fetch(`/api/messages?room=${STATE.currentRoom}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user: STATE.currentUser, text })
+            });
+            syncMessages();
+        };
+
+        if (!STATE.isGuest) loadContacts();
+        setInterval(syncMessages, 3000);
     </script>
 </body>
 </html>
