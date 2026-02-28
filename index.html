@@ -3,201 +3,338 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>THE PROPRIETRESS OS</title>
+    <title>THE PROPRIETRESS OS | Executive Command & Control</title>
     
+    <!-- PWA / Mobile Config -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com">
+    <link href="https://fonts.googleapis.com" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net"></script>
 
     <style>
-        :root { --bg-deep: #020617; --accent: #3b82f6; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-deep); color: #f8fafc; overflow: hidden; height: 100vh; }
-        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.05); }
+        :root { --bg-deep: #020617; --accent: #3b82f6; --glass: rgba(15, 23, 42, 0.7); }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-deep); color: #f8fafc; overflow: hidden; height: 100vh; margin: 0; }
+        
+        /* UI Components */
+        .glass { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.05); }
         .sidebar { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 50; }
         
-        /* Guest Mode Lockdown */
-        body.guest-mode .sidebar, body.guest-mode nav, body.guest-mode header { display: none !important; }
+        /* Guest Mode Lockdown (Redirect Logic) */
+        body.guest-mode .sidebar, body.guest-mode .desktop-header { display: none !important; }
         body.guest-mode main { width: 100vw !important; padding: 0 !important; }
-        body.guest-mode #view-messenger { display: flex !important; height: 100vh; width: 100%; }
+        body.guest-mode #view-messenger { display: flex !important; height: 100vh; }
 
-        #map { height: 400px; border-radius: 24px; z-index: 10; }
-        .chat-bubble { max-width: 85%; padding: 12px 18px; border-radius: 22px; font-size: 0.9rem; animation: slideUp 0.3s ease; }
-        .bubble-in { background: #1e293b; border-bottom-left-radius: 4px; align-self: flex-start; }
-        .bubble-out { background: #2563eb; border-bottom-right-radius: 4px; align-self: flex-end; }
-        
-        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .tab-view { display: none; height: 100%; overflow-y: auto; }
+        /* Animations */
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-slide { animation: slideUp 0.4s ease forwards; }
+        .tab-view { display: none; height: 100%; overflow-y: auto; padding-bottom: 100px; }
         .tab-view.active { display: block; animation: fadeIn 0.5s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Chat Styles */
+        .chat-bubble { max-width: 80%; padding: 14px 20px; border-radius: 24px; font-size: 0.95rem; line-height: 1.5; position: relative; }
+        .bubble-in { background: #1e293b; border-bottom-left-radius: 4px; align-self: flex-start; }
+        .bubble-out { background: #2563eb; border-bottom-right-radius: 4px; align-self: flex-end; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.2); }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
     </style>
 </head>
 <body class="flex flex-col md:flex-row">
 
-    <aside id="sidebar" class="sidebar w-80 bg-slate-950 border-r border-white/5 flex flex-col justify-between p-8">
+    <!-- MOBILE HEADER / HAMBURGER -->
+    <header class="flex md:hidden w-full h-16 bg-slate-950/80 backdrop-blur-md border-b border-white/10 items-center justify-between px-6 sticky top-0 z-[100]">
+        <h1 class="text-xl font-black text-blue-500">P.OS <span class="text-[10px] text-white/30">V2.0</span></h1>
+        <button onclick="toggleSidebar()" class="text-white text-2xl"><i class="fas fa-bars-staggered" id="menu-icon"></i></button>
+    </header>
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="sidebar w-80 bg-slate-950 border-r border-white/5 flex flex-col justify-between p-8 overflow-y-auto">
         <div>
-            <h1 class="text-2xl font-black text-blue-500 tracking-tighter mb-10">PROPRIETRESS</h1>
-            <nav class="space-y-2">
-                <button onclick="navTo('dash')" class="w-full flex items-center gap-4 px-6 py-4 rounded-2xl bg-blue-600/10 text-blue-400 border border-blue-500/20">
-                    <i class="fas fa-gauge-high"></i> <span class="font-bold">Command</span>
+            <div class="mb-12">
+                <h1 class="text-2xl font-black text-blue-500 tracking-tighter">PROPRIETRESS</h1>
+                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-[0.2em]">Executive Control</p>
+            </div>
+
+            <nav class="space-y-3">
+                <button onclick="navTo('dash')" id="nav-dash" class="nav-btn w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition bg-blue-600/10 text-blue-400 border border-blue-500/20">
+                    <i class="fas fa-tower-broadcast"></i> <span class="font-bold">Command</span>
                 </button>
-                <button onclick="navTo('messenger')" class="w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-slate-400 hover:bg-white/5">
-                    <i class="fas fa-comment-nodes"></i> <span class="font-bold">Chat</span>
+                <button onclick="navTo('messenger')" id="nav-messenger" class="nav-btn w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition text-slate-400 hover:bg-white/5">
+                    <i class="fas fa-comment-nodes"></i> <span class="font-bold">Messenger</span>
                 </button>
-                <button onclick="navTo('travel')" class="w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-slate-400 hover:bg-white/5">
-                    <i class="fas fa-map-location-dot"></i> <span class="font-bold">Map</span>
+                <button onclick="navTo('travel')" id="nav-travel" class="nav-btn w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition text-slate-400 hover:bg-white/5">
+                    <i class="fas fa-map-location-dot"></i> <span class="font-bold">Travel Hub</span>
+                </button>
+                <button onclick="navTo('voice')" id="nav-voice" class="nav-btn w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition text-slate-400 hover:bg-white/5">
+                    <i class="fas fa-microphone-lines"></i> <span class="font-bold">Afolabi AI</span>
                 </button>
             </nav>
         </div>
-        <div class="glass p-5 rounded-3xl">
-            <p id="os-time" class="text-2xl font-mono font-bold text-white">00:00:00</p>
-            <p id="os-weather" class="text-[10px] text-slate-500 mt-1 uppercase">Syncing Metro...</p>
+
+        <div class="space-y-4">
+            <div class="glass p-5 rounded-3xl">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-[9px] text-blue-400 font-black uppercase">Metro Sync</span>
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                </div>
+                <p id="os-time" class="text-2xl font-mono font-bold text-white">00:00:00</p>
+                <p id="os-weather" class="text-[10px] text-slate-500 mt-1 uppercase font-bold tracking-tighter italic">Syncing Open-Meteo...</p>
+            </div>
+            <div class="flex items-center gap-3 px-2">
+                <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-bold text-white">MO</div>
+                <div>
+                    <p class="text-xs font-bold text-white">Prof. M.O. Afolabi</p>
+                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-widest">Admin</p>
+                </div>
+            </div>
         </div>
     </aside>
 
-    <main class="flex-1 relative overflow-hidden">
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 relative overflow-hidden bg-slate-950">
         
+        <!-- COMMAND DASHBOARD -->
         <section id="view-dash" class="tab-view active p-8 md:p-16">
-            <h2 class="text-5xl font-black mb-8">Executive <span class="text-blue-500">Brief</span></h2>
-            <div id="news-ticker" class="glass p-6 rounded-3xl border-l-4 border-emerald-500 mb-8 animate-pulse text-sm italic">
-                Scanning global news feeds...
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="glass p-8 rounded-[40px]">
-                    <p class="text-xs font-black text-blue-500 uppercase mb-2">Network Status</p>
-                    <h3 class="text-2xl font-bold text-white">Secure Link Ready</h3>
-                    <button onclick="shareInviteLink()" class="mt-4 px-6 py-3 bg-blue-600 rounded-xl text-sm font-bold hover:scale-105 transition">GENERATE GUEST LINK</button>
+            <header class="mb-12">
+                <h2 class="text-5xl font-black leading-tight">Welcome, <br><span class="text-blue-500">Professor.</span></h2>
+                <div class="mt-6 flex gap-4">
+                    <button onclick="runMorningBriefing()" class="px-6 py-3 bg-white text-black font-bold rounded-xl text-sm hover:bg-blue-500 hover:text-white transition">
+                        <i class="fas fa-play mr-2"></i> AUDIO BRIEFING
+                    </button>
+                    <button onclick="shareInviteLink()" class="px-6 py-3 glass rounded-xl text-sm font-bold border-blue-500/30 text-blue-400">
+                        <i class="fas fa-user-plus mr-2"></i> GUEST LINK
+                    </button>
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="glass p-10 rounded-[45px] border-l-4 border-blue-500">
+                    <h3 class="text-xl font-bold mb-4">Daily Activity Sync</h3>
+                    <div id="schedule-list" class="space-y-4">
+                        <!-- Dynamic schedule -->
+                    </div>
+                </div>
+                <div class="glass p-10 rounded-[45px] border-l-4 border-yellow-500">
+                    <h3 class="text-xl font-bold mb-4">Environmental Intelligence</h3>
+                    <div id="weather-detail" class="text-slate-400 space-y-2 text-sm italic">
+                        Checking Ife Metro Sensors...
+                    </div>
                 </div>
             </div>
         </section>
 
-        <section id="view-messenger" class="tab-view p-4 md:p-8 flex flex-col h-full">
-            <div class="flex-1 glass rounded-[40px] flex flex-col overflow-hidden">
-                <div class="p-6 border-b border-white/5 flex justify-between items-center">
-                    <h3 class="font-black tracking-widest text-blue-500">SECURE CHANNEL</h3>
-                    <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full">ENCRYPTED</span>
+        <!-- MESSENGER (RESTRICTED MODE FRIENDLY) -->
+        <section id="view-messenger" class="tab-view p-4 md:p-12 flex flex-col h-full">
+            <div class="flex-1 glass rounded-[40px] flex flex-col overflow-hidden border-white/5">
+                <div class="p-6 border-b border-white/5 flex justify-between items-center bg-slate-900/40">
+                    <h3 class="font-black text-blue-500 tracking-widest">SECURE CHANNEL</h3>
+                    <span id="chat-room-id" class="text-[9px] bg-blue-600/20 text-blue-400 px-3 py-1 rounded-full font-bold">LOADING...</span>
                 </div>
-                <div id="chat-container" class="flex-1 overflow-y-auto p-6 space-y-4 flex flex-col"></div>
-                <form id="messenger-form" class="p-4 bg-slate-900/50 flex gap-2">
-                    <input type="text" id="m-input" placeholder="Type message..." class="flex-1 bg-slate-800 rounded-2xl px-6 py-4 outline-none text-white border border-white/5">
-                    <button type="submit" class="w-14 h-14 bg-blue-600 rounded-2xl"><i class="fas fa-paper-plane"></i></button>
+                <div id="chat-container" class="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col">
+                    <!-- Messages render here -->
+                </div>
+                <form id="chat-form" class="p-4 bg-slate-950/80 flex gap-4 border-t border-white/5">
+                    <input type="text" id="chat-input" placeholder="Type executive command..." autocomplete="off" 
+                        class="flex-1 bg-slate-900 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:ring-2 ring-blue-500 text-white">
+                    <button type="submit" class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/30">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
                 </form>
             </div>
         </section>
 
-        <section id="view-travel" class="tab-view p-8">
-            <div class="flex gap-4 mb-6">
-                <input type="text" id="map-search" placeholder="Search location..." class="flex-1 bg-slate-800 p-4 rounded-xl outline-none">
-                <button onclick="searchMap()" class="px-8 bg-emerald-600 rounded-xl font-bold">LOCATE</button>
+        <!-- TRAVEL HUB -->
+        <section id="view-travel" class="tab-view p-8 md:p-16">
+            <div class="mb-10 flex justify-between items-end">
+                <div>
+                    <h2 class="text-4xl font-black">Travel <span class="text-emerald-500">Intelligence</span></h2>
+                    <p class="text-slate-500 italic mt-2">Haversine trajectory calculations active.</p>
+                </div>
             </div>
-            <div id="map"></div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <div class="glass p-8 rounded-[40px] h-fit">
+                    <input type="text" id="travel-query" placeholder="Enter Destination (e.g. Lagos, Abuja)..." 
+                        class="w-full bg-slate-800 border-none rounded-2xl p-5 text-white mb-4 focus:ring-2 ring-emerald-500">
+                    <button onclick="calculateTrajectory()" class="w-full bg-emerald-600 py-5 rounded-2xl font-black tracking-widest hover:bg-emerald-500 transition shadow-xl shadow-emerald-600/20">
+                        ANALYZE PATH
+                    </button>
+                </div>
+                <div id="travel-results" class="space-y-4">
+                    <!-- Travel logs render here -->
+                </div>
+            </div>
         </section>
 
     </main>
 
     <script>
-        const APP_STATE = {
-            user: "Executive",
-            room: new URLSearchParams(window.location.search).get('room') || 'Global-Admin',
-            isGuest: new URLSearchParams(window.location.search).get('view') === 'guest'
+        /* --- CORE CONFIG --- */
+        const APP = {
+            owner: "Prof. M.O. Afolabi",
+            room: new URLSearchParams(window.location.search).get('room') || 'Executive-Lounge',
+            isGuest: new URLSearchParams(window.location.search).get('view') === 'guest',
+            hq: { name: "OAU Ife HQ", lat: 7.4913, lon: 4.5244 }
         };
 
-        // 1. GUEST LOCKDOWN LOGIC
-        if (APP_STATE.isGuest) {
-            document.body.classList.add('guest-mode');
-            APP_STATE.user = "Guest";
-            document.getElementById('view-messenger').classList.add('active');
-        }
+        const GEO_DB = {
+            "Lagos": { lat: 6.5244, lon: 3.3792 },
+            "Abuja": { lat: 9.0765, lon: 7.3986 },
+            "Ibadan": { lat: 7.3775, lon: 3.9470 },
+            "London": { lat: 51.5074, lon: -0.1278 },
+            "New York": { lat: 40.7128, lon: -74.0060 }
+        };
 
-        // 2. LEAFLET MAP INITIALIZATION
-        let map = L.map('map').setView([7.4913, 4.5244], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
-        let marker = L.marker([7.4913, 4.5244]).addTo(map);
-
-        async function searchMap() {
-            const query = document.getElementById('map-search').value;
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`);
-            const data = await res.json();
-            if (data.length > 0) {
-                const { lat, lon } = data[0];
-                map.setView([lat, lon], 13);
-                marker.setLatLng([lat, lon]);
+        /* --- INITIALIZATION --- */
+        document.addEventListener('DOMContentLoaded', () => {
+            if(APP.isGuest) {
+                document.body.classList.add('guest-mode');
+                navTo('messenger');
             }
+            syncAll();
+            setInterval(syncAll, 1000);
+            setInterval(fetchMessages, 3000);
+            document.getElementById('chat-room-id').innerText = `ROOM: ${APP.room}`;
+        });
+
+        function syncAll() {
+            // Clock
+            document.getElementById('os-time').innerText = new Date().toLocaleTimeString('en-GB', { hour12: false });
+            // Only sync weather occasionally
+            if(new Date().getSeconds() === 0) syncWeather();
         }
 
-        // 3. SECURE GUEST LINK GENERATOR
-        function shareInviteLink() {
-            const token = Math.random().toString(36).substring(2, 15);
-            const guestURL = `${window.location.origin}${window.location.pathname}?room=${token}&view=guest`;
-            navigator.clipboard.writeText(guestURL);
-            alert("SECURE GUEST LINK COPIED!\nShe will only see the chat, not your dashboard.");
+        /* --- NAVIGATION --- */
+        function navTo(tab) {
+            if(APP.isGuest && tab !== 'messenger') return;
+            document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('bg-blue-600/10', 'text-blue-400', 'border-blue-500/20'));
+            
+            document.getElementById('view-' + tab).classList.add('active');
+            if(!APP.isGuest) {
+                document.getElementById('nav-' + tab).classList.add('bg-blue-600/10', 'text-blue-400', 'border-blue-500/20');
+            }
+            if(window.innerWidth < 768) toggleSidebar(false);
         }
 
-        // 4. METRO WEATHER & NEWS
-        async function syncData() {
-            // Weather
-            try {
-                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=7.49&longitude=4.52&current_weather=true`);
-                const data = await res.json();
-                document.getElementById('os-weather').innerText = `IFE: ${data.current_weather.temperature}°C • OPTIMAL`;
-            } catch(e) {}
-
-            // News Ticker
-            try {
-                const res = await fetch('https://api.spaceflightnewsapi.net/v4/articles/?limit=1');
-                const data = await res.json();
-                document.getElementById('news-ticker').innerText = `INTEL: ${data.results[0].title}`;
-            } catch(e) {}
+        function toggleSidebar(force) {
+            const side = document.getElementById('sidebar');
+            const icon = document.getElementById('menu-icon');
+            const isOpen = force !== undefined ? force : !side.classList.contains('active');
+            
+            side.classList.toggle('active', isOpen);
+            icon.classList.replace(isOpen ? 'fa-bars-staggered' : 'fa-xmark', isOpen ? 'fa-xmark' : 'fa-bars-staggered');
         }
 
-        // 5. CHAT SYSTEM (Connects to your Vercel KV API)
+        /* --- VOICE & AUDIO --- */
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function runMorningBriefing() {
+            const temp = document.getElementById('os-weather').innerText.split('•')[0];
+            speak(`Good morning, Professor. Systems are online. Current temperature at the University is ${temp}. You have no urgent conflicts in your trajectory today.`);
+        }
+
+        /* --- MESSENGER ENGINE --- */
         async function fetchMessages() {
             try {
-                const res = await fetch(`/api/messages?room=${APP_STATE.room}`);
-                const msgs = await res.json();
-                const container = document.getElementById('chat-container');
-                container.innerHTML = msgs.map(m => `
-                    <div class="flex flex-col ${m.user === APP_STATE.user ? 'items-end' : 'items-start'}">
-                        <div class="chat-bubble ${m.user === APP_STATE.user ? 'bubble-out' : 'bubble-in'}">
-                            ${m.text}
-                        </div>
-                    </div>
-                `).join('');
-                container.scrollTop = container.scrollHeight;
-            } catch (e) {}
+                const res = await fetch(`/api/messages?room=${APP.room}`);
+                const data = await res.json();
+                renderChat(data);
+            } catch (e) { console.warn("Comms Sync Interrupted"); }
         }
 
-        document.getElementById('messenger-form').onsubmit = async (e) => {
+        function renderChat(data) {
+            const container = document.getElementById('chat-container');
+            const user = APP.isGuest ? "Guest" : APP.owner;
+            const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+
+            container.innerHTML = data.map(m => `
+                <div class="flex flex-col ${m.user === user ? 'items-end' : 'items-start'} animate-slide">
+                    <span class="text-[9px] font-black text-slate-500 uppercase px-3 mb-1">${m.user}</span>
+                    <div class="chat-bubble ${m.user === user ? 'bubble-out' : 'bubble-in'}">
+                        ${m.text}
+                    </div>
+                </div>
+            `).join('');
+            if(isAtBottom) container.scrollTop = container.scrollHeight;
+        }
+
+        document.getElementById('chat-form').onsubmit = async (e) => {
             e.preventDefault();
-            const input = document.getElementById('m-input');
-            if (!input.value) return;
-            await fetch(`/api/messages?room=${APP_STATE.room}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user: APP_STATE.user, text: input.value })
-            });
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            const user = APP.isGuest ? "Guest" : APP.owner;
+            if(!text) return;
+
             input.value = '';
+            await fetch(`/api/messages?room=${APP.room}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ user, text, time: new Date().toLocaleTimeString() })
+            });
             fetchMessages();
         };
 
-        // Init
-        function navTo(id) {
-            document.querySelectorAll('.tab-view').forEach(t => t.classList.remove('active'));
-            document.getElementById('view-' + id).classList.add('active');
-            if (id === 'travel') setTimeout(() => map.invalidateSize(), 100);
+        function shareInviteLink() {
+            const roomID = "Exec-" + Math.floor(Math.random() * 9999);
+            const url = `${window.location.origin}${window.location.pathname}?room=${roomID}&view=guest`;
+            navigator.clipboard.writeText(url);
+            alert("SECURE GUEST LINK COPIED. \nRedirecting to separate chat-only view.");
         }
 
-        setInterval(() => {
-            document.getElementById('os-time').innerText = new Date().toLocaleTimeString('en-GB');
-            fetchMessages();
-        }, 3000);
-        
-        syncData();
-        fetchMessages();
+        /* --- WEATHER & TRAVEL --- */
+        async function syncWeather() {
+            const res = await fetch(`https://api.open-meteo.com`);
+            const data = await res.json();
+            const temp = data.current_weather.temperature;
+            document.getElementById('os-weather').innerText = `${temp}°C • IFE METRO • OPTIMAL`;
+            document.getElementById('weather-detail').innerText = `Professor, Ife is currently ${temp} degrees with ${data.current_weather.windspeed}km/h winds. Perfect for executive travel.`;
+        }
+
+        function calculateTrajectory() {
+            const input = document.getElementById('travel-query').value.trim();
+            const city = Object.keys(GEO_DB).find(k => k.toLowerCase() === input.toLowerCase());
+            
+            if(!city) {
+                speak("Location not in secure database.");
+                return;
+            }
+
+            const target = GEO_DB[city];
+            const dist = getHaversine(APP.hq.lat, APP.hq.lon, target.lat, target.lon);
+            const driveTime = (dist / 85).toFixed(1);
+
+            document.getElementById('travel-results').innerHTML = `
+                <div class="glass p-8 rounded-[40px] border-l-4 border-emerald-500 animate-slide">
+                    <p class="text-[10px] font-black text-emerald-500 uppercase mb-2 tracking-widest">Calculated Trajectory</p>
+                    <h3 class="text-3xl font-bold">${city.toUpperCase()}</h3>
+                    <div class="grid grid-cols-2 gap-4 mt-6">
+                        <div><p class="text-[10px] text-slate-500 uppercase">Distance</p><p class="text-xl font-bold">${dist} KM</p></div>
+                        <div><p class="text-[10px] text-slate-500 uppercase">Est. Drive</p><p class="text-xl font-bold">${driveTime} HRS</p></div>
+                    </div>
+                </div>
+            ` + document.getElementById('travel-results').innerHTML;
+
+            speak(`Trajectory to ${city} is ${dist} kilometers. Estimated travel time is ${driveTime} hours.`);
+        }
+
+        function getHaversine(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2-lat1) * Math.PI/180;
+            const dLon = (lon2-lon1) * Math.PI/180;
+            const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+            return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+        }
     </script>
 </body>
 </html>
