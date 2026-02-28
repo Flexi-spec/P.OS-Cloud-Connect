@@ -49,4 +49,12 @@ self.addEventListener('notificationclick', (event) => {
             }
         })
     );
+}); 
+                      self.addEventListener('install', (event) => {
+  console.log('P.OS Service Worker Installed');
+});
+
+self.addEventListener('fetch', (event) => {
+  // Pass-through for network requests
+  event.respondWith(fetch(event.request));
 });
